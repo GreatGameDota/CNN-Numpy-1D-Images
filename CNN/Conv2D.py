@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Conv2D:
+class Conv2D():
 
     def __init__(self, filters, kernal_size, stride=(1, 1), padding="valid", activation=None, use_bias=True, kernal_initializer="glorot_uniform", bia_initializer="zeros", input_shape=None, prev_filters=1):
         self._filters = filters
@@ -16,8 +16,9 @@ class Conv2D:
         self._bias = np.zeros((filters, 1))
 
     def setPrevFilters(self, filters):
+        self._prevUnits = filters
         self._filter = np.zeros(
-            (self._filters, filters, self._kernal_size, self._kernal_size))
+            (self._filters, filters, self._kernal_size[0], self._kernal_size[1]))
 
     def forward(self, image):
         self._conv_in = image
