@@ -4,6 +4,13 @@ from CNN.Dense import Dense
 from CNN.MaxPool2D import MaxPool2D
 from CNN.Flatten import Flatten
 from CNN.adamGD import adamGD
+import numpy as np
+from keras.datasets import mnist
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+x_train /= 255
+x_test /= 255
 
 model = Sequential()
 model.add(Conv2D(8, (5, 5), activation="relu",
@@ -17,3 +24,5 @@ model.add(Dense(10, activation='softmax'))
 # compile model
 opt = adamGD(lr=0.01)
 model.compile(opt, 'categorical_crossentropy')
+model.fit(np.reshape(x_train[0], (1, 28*28)),
+          np.reshape(y_train[0], (1, 1)), 1)

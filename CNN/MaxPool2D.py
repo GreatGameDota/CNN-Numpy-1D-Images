@@ -48,6 +48,8 @@ class MaxPool2D():
                     out_x += 1
                 curr_y += self._stride[1]
                 out_y += 1
+        # Backprop ReLU
+        dout[self._orig <= 0] = 0
         return dout
 
     def nanargmax(self, arr):

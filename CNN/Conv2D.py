@@ -19,6 +19,9 @@ class Conv2D():
         self._prevUnits = filters
         self._filter = np.zeros(
             (self._filters, filters, self._kernal_size[0], self._kernal_size[1]))
+        stddev = 1 / np.sqrt(np.prod(self._filter.shape))
+        self._filter = np.random.normal(
+            loc=0, scale=stddev, size=self._filter.shape)
 
     def forward(self, image):
         self._conv_in = image
@@ -40,13 +43,13 @@ class Conv2D():
                 curr_y += self._stride[1]
                 out_y += 1
 
-        if(self._activation == "relu"):
+        if self._activation == "relu":
             out[out <= 0] = 0
         return out
 
     def backward(self, dconv_prev):
         f1, _, f3, _ = self._filter.shape
-        _, orig_dim, _ = self._conv_in
+        _, orig_dim, _ = self._conv_in.shape
         dout = np.zeros(self._conv_in.shape)
         dfilt = np.zeros(self._filter.shape)
         dbias = np.zeros((f1, 1))
@@ -66,6 +69,4 @@ class Conv2D():
                 out_y += 1
             dbias[curr_f] = np.sum(dconv_prev[curr_f])
 
-        # if(self._activation == "relu"):
-            # dout[self._conv_in <= 0] = 0
         return dout, dfilt, dbias
