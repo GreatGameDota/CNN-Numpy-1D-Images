@@ -8,21 +8,12 @@ class adamGD():
     self.beta1 = 0.95
     self.beta2 = 0.99
 
-  def update(self, params, cost, batch_size):
+  def update(self, weights, params, cost, costs, batch_size):
     lr = self._lr
     beta1 = self.beta1
     beta2 = self.beta2
-    [f1, f2, w3, w4, b1, b2, b3, b4] = params
-    cost_ = 0
-
-    df1 = np.zeros(f1.shape)
-    df2 = np.zeros(f2.shape)
-    dw3 = np.zeros(w3.shape)
-    dw4 = np.zeros(w4.shape)
-    db1 = np.zeros(b1.shape)
-    db2 = np.zeros(b2.shape)
-    db3 = np.zeros(b3.shape)
-    db4 = np.zeros(b4.shape)
+    [f1, f2, w3, w4, b1, b2, b3, b4] = weights
+    [df1, df2, dw3, dw4, db1, db2, db3, db4] = params
 
     v1 = np.zeros(f1.shape)
     v2 = np.zeros(f2.shape)
@@ -75,9 +66,9 @@ class adamGD():
     bs4 = beta2*bs4 + (1-beta2)*(db4/batch_size)**2
     b4 -= lr * bv4 / np.sqrt(bs4+1e-7)
 
-    cost_ /= batch_size
-    cost.append(cost_)
+    cost /= batch_size
+    costs.append(cost)
 
-    params = [f1, f2, w3, w4, b1, b2, b3, b4]
+    params = [f1, b1, f2, b2, w3, b3, w4, b4]
 
-    return params, cost
+    return params, costs
