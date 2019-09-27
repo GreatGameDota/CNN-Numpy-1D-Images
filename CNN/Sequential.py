@@ -174,12 +174,29 @@ class Sequential():
         # print(loss)
 
     def predict_classes(self, image):
-        # TODO
-        {}
+        i1, i2, i3 = self._layers[0]._input_shape
+        x_train = np.reshape(image, (i3, i1, i2))
+        # Forward
+        num = 0
+        for layer in self._layers:
+            if num == 0:
+                out = layer.forward(x_train)
+            else:
+                out = layer.forward(out)
+            num += 1
+        return np.argmax(out), out
 
-    def evaluate(self):
-        # TODO
-        {}
+    def evaluate(self, x_test, y_test):
+        batch_size = len(x_test)
+        amountCorrect = 0
+        t = trange(batch_size)
+        for i in t:
+            if i > 0:
+                t.set_description('Acc: %.2f' % (amountCorrect / float(i) * 100) + '%')
+            pred, _ = self.predict_classes(x_test[i])
+            if pred == y_test[i]:
+                amountCorrect += 1
+        return float(amountCorrect) / batch_size
 
     def categoricalCrossEntropy(self, probs, label):
         return -np.sum(label * np.log(probs))
