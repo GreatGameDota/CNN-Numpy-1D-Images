@@ -4,6 +4,7 @@ from CNN.Dense import Dense
 from CNN.MaxPool2D import MaxPool2D
 from CNN.Flatten import Flatten
 from CNN.adamGD import adamGD
+# Data prep
 import numpy as np
 from keras.datasets import mnist
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -23,7 +24,8 @@ model.add(MaxPool2D((2, 2)))
 model.add(Flatten())
 model.add(Dense(128, activation='relu', kernel_initializer='he_uniform'))
 model.add(Dense(10, activation='softmax'))
-# compile model
+# Compile model
 opt = adamGD(lr=0.01)
 model.compile(opt, 'categorical_crossentropy')
-model.fit(x_train, y_train, batch_size=100, epochs=10)
+model.fit(x_train, y_train, batch_size=100, epochs=100)
+# model.save('model.pkl')
