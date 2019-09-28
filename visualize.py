@@ -41,13 +41,16 @@ def saveImage(h, w, image, name):
 
 for idx, d in enumerate(conv1):
     data = d * 255
+    data[data >= 255] = 255
     saveImage(data.shape[0], data.shape[1], data, str(idx)+'.png')
 for idx, d in enumerate(conv2):
     data = d * 255
+    data[data >= 255] = 255
     saveImage(data.shape[0], data.shape[1],
               data, str(idx + 8) + '.png')
 for idx, d in enumerate(maxpool1):
     data = d * 255
+    data[data >= 255] = 255
     saveImage(data.shape[0], data.shape[1],
               data, str(idx + 16) + '.png')
 
