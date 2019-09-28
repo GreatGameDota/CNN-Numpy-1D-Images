@@ -24,8 +24,7 @@ x_test /= 255
 
 model = Sequential()
 model.load_model('model.pkl')
-# pred, prob = model.predict_classes(x_test[892])
-# print(pred)
-# print(y_test[892])
-acc = model.evaluate(x_test, y_test)
-# print(acc)
+pred, prob = model.predict_classes(x_test[892])
+print(pred)
+print(y_test[892])
+# acc = model.evaluate(x_test, y_test)

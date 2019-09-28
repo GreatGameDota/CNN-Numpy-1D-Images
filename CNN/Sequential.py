@@ -11,6 +11,8 @@ class Sequential():
 
     def __init__(self, layers=None):
         self._layers = []
+        self.conv2D = []
+        self.dense = []
         if layers:
             for layer in layers:
                 self.add(layer)
@@ -18,11 +20,14 @@ class Sequential():
     def add(self, layer):
         self._layers.append(layer)
         if (isinstance(layer, Conv2D)):
+            self.conv2D.append(len(self._layers) - 1)
             if (len(self._layers) != 1):
                 layer.setPrevFilters(
                     self._layers[-1]._filters)
             else:
                 layer.setPrevFilters(1)
+        if isinstance(layer, Dense):
+            self.dense.append(len(self._layers) - 1)
 
     def compile(self, opt, loss):
         self._opt = opt
@@ -67,35 +72,28 @@ class Sequential():
         data = np.hstack((x, y))
         self.costs = []
 
-        f1 = self._layers[0]._filter
-        f2 = self._layers[1]._filter
-        w3 = self._layers[4]._weights
-        w4 = self._layers[5]._weights
-        b1 = self._layers[0]._bias
-        b2 = self._layers[1]._bias
-        b3 = self._layers[4]._bias
-        b4 = self._layers[5]._bias
-
-        loss = -1
-
-        for epoch in range(epochs):
-            cost_ = 0
+        t = trange(epochs)
+        for epoch in t:
             if shuffle:
                 np.random.shuffle(data)
-            df1 = np.zeros(f1.shape)
-            df2 = np.zeros(f2.shape)
-            dw3 = np.zeros(w3.shape)
-            dw4 = np.zeros(w4.shape)
-            db1 = np.zeros(b1.shape)
-            db2 = np.zeros(b2.shape)
-            db3 = np.zeros(b3.shape)
-            db4 = np.zeros(b4.shape)
+            cost_ = 0
+            
+            all_params = []
+            for conv in self.conv2D:
+                all_params.append(self._layers[conv]._filter)
+                all_params.append(self._layers[conv]._bias)
+            for dense in self.dense:
+                all_params.append(self._layers[dense]._weights)
+                all_params.append(self._layers[dense]._bias)
+            
+            all_grads = []
+            for param in all_params:
+                all_grads.append(np.zeros(param.shape))
+
             t = trange(batch_size)
             for i in t:
                 y = data[:, -1]
                 x = data[:, 0:-1]
-                t.set_description('Epoch %i: Cost %.2f' %
-                                  ((epoch + 1), loss))
                 i1, i2, i3 = self._layers[0]._input_shape
                 x_train = np.reshape(x[i], (i3, i1, i2))
                 label = np.eye(self.num_classes)[
@@ -130,14 +128,14 @@ class Sequential():
                 for layer in reversed(self._layers):
                     if num == 0:
                         dw1, _db1 = layer.backwardFirst(dout, z)
-                        grads.append(dw1)
                         grads.append(_db1)
+                        grads.append(dw1)
                     else:
                         if isinstance(layer, Dense):
                             dw, db, dz = layer.backward(
                                 dout, self._layers[len(self._layers) - (num)]._weights, flat, z)
-                            grads.append(dw)
                             grads.append(db)
+                            grads.append(dw)
                         elif isinstance(layer, MaxPool2D):
                             dfc = self._layers[wIdx]._weights.T.dot(dz)
                             dpool = dfc.reshape(pooled.shape)
@@ -146,44 +144,39 @@ class Sequential():
                             dconv, df, db = layer.backward(dconv)
                             if num != len(self._layers) - 1:
                                 dconv[layer._conv_in <= 0] = 0
-                            grads.append(df)
                             grads.append(db)
+                            grads.append(df)
                     num += 1
-                [dw4_, db4_, dw3_, db3_,  df2_, db2_, df1_, db1_] = grads
-                df1 += df1_
-                db1 += db1_
-                df2 += df2_
-                db2 += db2_
-                dw3 += dw3_
-                db3 += db3_
-                dw4 += dw4_
-                db4 += db4_
+                idx = len(all_grads) - 1
+                for i, grad in enumerate(all_grads):
+                    all_grads[i] = grad + grads[idx]
+                    idx -= 1
                 cost_ += loss
-            weights = [f1, f2, w3, w4, b1, b2, b3, b4]
-            grads = [df1, df2, dw3, dw4, db1, db2, db3, db4]
+                t.set_description('Epoch %i: Cost %.3f' %
+                                  ((epoch + 1), loss))
             params, self.costs = self._opt.update(
-                weights, grads, cost_, self.costs, batch_size)
-            self._layers[0]._filter = params[0]
-            self._layers[0]._bias = params[1]
-            self._layers[1]._filter = params[2]
-            self._layers[1]._bias = params[3]
-            self._layers[4]._weights = params[4]
-            self._layers[4]._bias = params[5]
-            self._layers[5]._weights = params[6]
-            self._layers[5]._bias = params[7]
-        # print(loss)
+                all_params, all_grads, cost_, self.costs, batch_size)
+            idx = 0
+            for conv in self.conv2D:
+                self._layers[conv]._filter = params[idx]
+                idx += 1
+                self._layers[conv]._bias = params[idx]
+                idx += 1
+            for dense in self.dense:
+                self._layers[dense]._weights = params[idx]
+                idx += 1
+                self._layers[dense]._bias = params[idx]
+                idx += 1
+        # print(self.costs)
 
     def predict_classes(self, image):
         i1, i2, i3 = self._layers[0]._input_shape
         x_train = np.reshape(image, (i3, i1, i2))
-        # Forward
-        num = 0
-        for layer in self._layers:
-            if num == 0:
+        for idx, layer in enumerate(self._layers):
+            if idx == 0:
                 out = layer.forward(x_train)
             else:
                 out = layer.forward(out)
-            num += 1
         return np.argmax(out), out
 
     def evaluate(self, x_test, y_test):
@@ -192,7 +185,8 @@ class Sequential():
         t = trange(batch_size)
         for i in t:
             if i > 0:
-                t.set_description('Acc: %.2f' % (amountCorrect / float(i) * 100) + '%')
+                t.set_description('Acc: %.2f' %
+                                  (amountCorrect / float(i) * 100) + '%')
             pred, _ = self.predict_classes(x_test[i])
             if pred == y_test[i]:
                 amountCorrect += 1
@@ -203,10 +197,10 @@ class Sequential():
 
     def save(self, fileName):
         to_save = [self._layers, self._inputShapes, self._loss,
-                   self._opt, self.costs, self.num_classes]
+                   self._opt, self.costs, self.num_classes, self.conv2D, self.dense]
         with open(fileName, 'wb') as file:
             pickle.dump(to_save, file)
 
     def load_model(self, path):
-        self._layers, self._inputShapes, self._loss, self._opt, self.costs, self.num_classes = pickle.load(
+        self._layers, self._inputShapes, self._loss, self._opt, self.costs, self.num_classes, self.conv2D, self.dense = pickle.load(
             open(path, 'rb'))
