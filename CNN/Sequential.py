@@ -77,7 +77,7 @@ class Sequential():
             if shuffle:
                 np.random.shuffle(data)
             cost_ = 0
-            
+
             all_params = []
             for conv in self.conv2D:
                 all_params.append(self._layers[conv]._filter)
@@ -85,7 +85,7 @@ class Sequential():
             for dense in self.dense:
                 all_params.append(self._layers[dense]._weights)
                 all_params.append(self._layers[dense]._bias)
-            
+
             all_grads = []
             for param in all_params:
                 all_grads.append(np.zeros(param.shape))
@@ -175,9 +175,14 @@ class Sequential():
         for idx, layer in enumerate(self._layers):
             if idx == 0:
                 out = layer.forward(x_train)
+                conv1 = out
             else:
                 out = layer.forward(out)
-        return np.argmax(out), out
+                if isinstance(layer, Conv2D):
+                    conv2 = out
+                if isinstance(layer, MaxPool2D):
+                    maxpool1 = out
+        return np.argmax(out), out, conv1, conv2, maxpool1
 
     def evaluate(self, x_test, y_test):
         batch_size = len(x_test)

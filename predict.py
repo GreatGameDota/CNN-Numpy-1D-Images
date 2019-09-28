@@ -13,18 +13,9 @@ x_test = x_test.astype('float32')
 x_train /= 255
 x_test /= 255
 
-# im = Image.open("sample.png")
-# sample = np.array(im.getdata())
-# sample = np.delete(sample, 1, 1)  # Delete R, G, B channels
-# sample = np.delete(sample, 1, 1)
-# sample = np.delete(sample, 1, 1)
-# sample = np.reshape(sample, (28, 28))
-# sample = sample.astype('float32')
-# sample /= 255
-
 model = Sequential()
 model.load_model('model.pkl')
-pred, prob = model.predict_classes(x_test[892])
+pred, prob, conv1, conv2, maxpool1 = model.predict_classes(x_test[892])
 print(pred)
 print(y_test[892])
 # acc = model.evaluate(x_test, y_test)
