@@ -13,4 +13,4 @@ After training, model achieved <b>93.77%</b> accuracy on test data set
 
 I also added a way to visualize how the example model works
 
-<img src='https://github.com/GreatGameDota/CNN-Numpy-Library/blob/master/github/ConvNet-Visual.png?raw=true' alt='accuracy' title='accuracy'>
+<img src='https://github.com/GreatGameDota/CNN-Numpy-Library/blob/master/github/ConvNet Visual.png?raw=true' alt='accuracy' title='accuracy'>
