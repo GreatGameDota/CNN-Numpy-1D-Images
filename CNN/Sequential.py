@@ -25,7 +25,7 @@ class Sequential():
                 layer.setPrevFilters(
                     self._layers[-1]._filters)
             else:
-                layer.setPrevFilters(1)
+                layer.setPrevFilters(layer._input_shape[2])
         if isinstance(layer, Dense):
             self.dense.append(len(self._layers) - 1)
 
@@ -49,8 +49,8 @@ class Sequential():
                     (self._inputShapes[-1][0] - layer._pool_size[0]) / layer._stride[0]) + 1
             if isinstance(layer, Conv2D) or isinstance(layer, MaxPool2D):
                 self._inputShapes.append(
-                    (nextDim, nextDim, self._layers[0]._input_shape[2]))
-                num += 1
+                    (nextDim, nextDim, 1))
+            num += 1
         idx = 0
         for layer in self._layers:
             if isinstance(layer, Dense):
@@ -66,9 +66,8 @@ class Sequential():
             idx += 1
         self.num_classes = self._layers[-1]._units
 
-    def fit(self, x=None, y=None, batch_size=None, epochs=1, shuffle=True):
-        if batch_size == None:
-            batch_size = x.shape[0]
+    def fit(self, x=None, y=None, batch_size=32, epochs=1, shuffle=True):
+        iterations = np.ceil(len(x) / batch_size)
         data = np.hstack((x, y))
         self.costs = []
 
@@ -100,6 +99,7 @@ class Sequential():
                     int(y[i])].reshape(self.num_classes, 1)
                 # Forward
                 conv = []
+                pool = []
                 wIdx = -1
                 num = 0
                 for layer in self._layers:
@@ -113,7 +113,7 @@ class Sequential():
                         flat = out
                         wIdx = num + 1
                     if isinstance(layer, MaxPool2D):
-                        pooled = out
+                        pool.append(out)
                     if isinstance(layer, Conv2D):
                         conv.append(out)
                     num += 1
@@ -124,6 +124,7 @@ class Sequential():
                 # Backward
                 dout = probs - label
                 grads = []
+                poolNum = 0
                 num = 0
                 for layer in reversed(self._layers):
                     if num == 0:
@@ -138,8 +139,9 @@ class Sequential():
                             grads.append(dw)
                         elif isinstance(layer, MaxPool2D):
                             dfc = self._layers[wIdx]._weights.T.dot(dz)
-                            dpool = dfc.reshape(pooled.shape)
+                            dpool = dfc.reshape(pool[poolNum].shape)
                             dconv = layer.backward(dpool)
+                            poolNum += 1
                         elif isinstance(layer, Conv2D):
                             dconv, df, db = layer.backward(dconv)
                             if num != len(self._layers) - 1:
@@ -168,6 +170,7 @@ class Sequential():
                 self._layers[dense]._bias = params[idx]
                 idx += 1
         # print(self.costs)
+        print("\n")
 
     def predict_classes(self, image):
         i1, i2, i3 = self._layers[0]._input_shape
@@ -192,7 +195,7 @@ class Sequential():
             if i > 0:
                 t.set_description('Acc: %.2f' %
                                   (amountCorrect / float(i) * 100) + '%')
-            pred, _ = self.predict_classes(x_test[i])
+            pred, _, _, _, _ = self.predict_classes(x_test[i])
             if pred == y_test[i]:
                 amountCorrect += 1
         return float(amountCorrect) / batch_size

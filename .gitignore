@@ -1,1 +1,5 @@
 __pycache__
+model2.pkl
+train_cifar10.py
+visualize_cifar10.py
+util
